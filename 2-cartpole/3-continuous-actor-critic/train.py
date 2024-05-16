@@ -13,16 +13,19 @@ from tensorflow_probability import distributions as tfd
 class ContinuousA2C(tf.keras.Model):
     def __init__(self, action_size):
         super(ContinuousA2C, self).__init__()
-        self.actor_fc1 = Dense(24, activation='tanh')
-        self.actor_mu = Dense(action_size,
-                              kernel_initializer=RandomUniform(-1e-3, 1e-3))
-        self.actor_sigma = Dense(action_size, activation='sigmoid',
-                                 kernel_initializer=RandomUniform(-1e-3, 1e-3))
+        self.actor_fc1 = Dense(24, activation="tanh")
+        self.actor_mu = Dense(
+            action_size, kernel_initializer=RandomUniform(-1e-3, 1e-3)
+        )
+        self.actor_sigma = Dense(
+            action_size,
+            activation="sigmoid",
+            kernel_initializer=RandomUniform(-1e-3, 1e-3),
+        )
 
-        self.critic_fc1 = Dense(24, activation='tanh')
-        self.critic_fc2 = Dense(24, activation='tanh')
-        self.critic_out = Dense(1,
-                                kernel_initializer=RandomUniform(-1e-3, 1e-3))
+        self.critic_fc1 = Dense(24, activation="tanh")
+        self.critic_fc2 = Dense(24, activation="tanh")
+        self.critic_out = Dense(1, kernel_initializer=RandomUniform(-1e-3, 1e-3))
 
     def call(self, x):
         actor_x = self.actor_fc1(x)
@@ -74,7 +77,7 @@ class ContinuousA2CAgent:
             advantage = tf.stop_gradient(target - value[0])
             dist = tfd.Normal(loc=mu, scale=sigma)
             action_prob = dist.prob([action])[0]
-            cross_entropy = - tf.math.log(action_prob + 1e-5)
+            cross_entropy = -tf.math.log(action_prob + 1e-5)
             actor_loss = tf.reduce_mean(cross_entropy * advantage)
 
             # 가치 신경망 오류 함수 구하기
@@ -93,15 +96,17 @@ class ContinuousA2CAgent:
 if __name__ == "__main__":
     # CartPole-v1 환경, 최대 타임스텝 수가 500
     gym.envs.register(
-        id='CartPoleContinuous-v0',
-        entry_point='env:ContinuousCartPoleEnv',
+        id="CartPoleContinuous-v0",
+        entry_point="env:ContinuousCartPoleEnv",
         max_episode_steps=500,
-        reward_threshold=475.0)
+        reward_threshold=475.0,
+    )
 
-    env = gym.make('CartPoleContinuous-v0')
+    env = gym.make("CartPoleContinuous-v0")
     # 환경으로부터 상태와 행동의 크기를 받아옴
     state_size = env.observation_space.shape[0]
     action_size = env.action_space.shape[0]
+    print(f"state_size: {state_size}, action_size: {action_size}")
     max_action = env.action_space.high[0]
 
     # 액터-크리틱(A2C) 에이전트 생성
@@ -122,7 +127,7 @@ if __name__ == "__main__":
                 env.render()
 
             action = agent.get_action(state)
-            next_state, reward, done, info = env.step(action)
+            next_state, reward, done, truncated, info = env.step(action)
             next_state = np.reshape(next_state, [1, state_size])
 
             # 타임스텝마다 보상 0.1, 에피소드가 중간에 끝나면 -1 보상
@@ -138,12 +143,15 @@ if __name__ == "__main__":
             if done:
                 # 에피소드마다 학습 결과 출력
                 score_avg = 0.9 * score_avg + 0.1 * score if score_avg != 0 else score
-                print("episode: {:3d} | score avg: {:3.2f} | loss: {:.3f} | sigma: {:.3f}".format(
-                      e, score_avg, np.mean(loss_list), np.mean(sigma)))
+                print(
+                    "episode: {:3d} | score avg: {:3.2f} | loss: {:.3f} | sigma: {:.3f}".format(
+                        e, score_avg, np.mean(loss_list), np.mean(sigma)
+                    )
+                )
 
                 scores.append(score_avg)
                 episodes.append(e)
-                pylab.plot(episodes, scores, 'b')
+                pylab.plot(episodes, scores, "b")
                 pylab.xlabel("episode")
                 pylab.ylabel("average score")
                 pylab.savefig("./save_graph/graph.png")
